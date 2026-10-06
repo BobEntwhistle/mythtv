@@ -82,15 +82,17 @@ static AVRational v4l2_get_sar(V4L2Context *ctx)
     return sar;
 }
 
-static inline unsigned int v4l2_resolution_changed(V4L2Context *ctx, struct v4l2_format *fmt2)
+static inline unsigned int v4l2_format_changed(V4L2Context *ctx, struct v4l2_format *fmt2)
 {
     struct v4l2_format *fmt1 = &ctx->format;
     int ret =  V4L2_TYPE_IS_MULTIPLANAR(ctx->type) ?
         fmt1->fmt.pix_mp.width != fmt2->fmt.pix_mp.width ||
-        fmt1->fmt.pix_mp.height != fmt2->fmt.pix_mp.height
+        fmt1->fmt.pix_mp.height != fmt2->fmt.pix_mp.height ||
+        fmt1->fmt.pix_mp.colorspace != fmt2->fmt.pix_mp.colorspace
         :
         fmt1->fmt.pix.width != fmt2->fmt.pix.width ||
-        fmt1->fmt.pix.height != fmt2->fmt.pix.height;
+        fmt1->fmt.pix.height != fmt2->fmt.pix.height ||
+        fmt1->fmt.pix.colorspace != fmt2->fmt.pix.colorspace;
 
     if (ret)
         av_log(logger(ctx), AV_LOG_DEBUG, "%s changed (%dx%d) -> (%dx%d)\n",
@@ -201,7 +203,7 @@ static int v4l2_handle_event(V4L2Context *ctx)
         return 0;
     }
 
-    if (v4l2_resolution_changed(&s->capture, &cap_fmt)) {
+    if (v4l2_format_changed(&s->capture, &cap_fmt)) {
         s->capture.height = v4l2_get_height(&cap_fmt);
         s->capture.width = v4l2_get_width(&cap_fmt);
         s->capture.sample_aspect_ratio = v4l2_get_sar(&s->capture);
